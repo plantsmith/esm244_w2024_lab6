@@ -66,9 +66,11 @@ W=a(SVL)^b
   b) Since we know the model is exponential in nature, we could log transform the data. If we do a standard OLS regression on the log transformed data, we can get approximations of the parameters from the regression coefficients
 `my_guess_model <- lm(log_weight ~ log_length, data = my_df) `
 
-  c) Using the coefficients function, we can then supply the nls start list with the regression coefficients. Hint: You will have to mathematically transform the intercept coefficient to get the guess for parameter a. 
+  c) Using the coefficients function, we can then supply the nls start list with the regression coefficients. You will have to mathematically transform the intercept coefficient to get the guess for parameter a. 
   
 3) Present your fitted model on a plot with female and male lizards separated by color. You should include the nls model in `kable` output of the html. 
+
+**The following parts are super-mega optional! It's using purrr to run on all species. If you're craving more continue on. Otherwise you will be asked to do something similar in your homework!**
 
 4) Group by species and sex then nest the data. Use `map()` variants to parameterize length to weight models for every species separated by each sex. Hint: you may need to adjust the controls of the `nls` function
 

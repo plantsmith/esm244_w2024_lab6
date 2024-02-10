@@ -3167,7 +3167,7 @@ return!"\t\n\x0B\f\r                　\u2028\u2029
 <div class="cell">
 <details>
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">load</span>(here<span class="sc">::</span><span class="fu">here</span>(<span class="st">&quot;data&quot;</span>,<span class="st">&quot;lab_6&quot;</span>,<span class="st">&quot;fish_data.Rdata&quot;</span>))</span>
+<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">load</span>(here<span class="sc">::</span><span class="fu">here</span>(<span class="st">&quot;data&quot;</span>,<span class="st">&quot;fish_data.Rdata&quot;</span>))</span>
 <span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(tidyverse)</span>
 <span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(Metrics)</span>
@@ -3182,9 +3182,9 @@ return!"\t\n\x0B\f\r                　\u2028\u2029
 <section id="step-1" class="level3">
 <h3 class="anchored" data-anchor-id="step-1">Step 1:</h3>
 <p>Surplus is the excess amount of biomass that was added or taken from the underlying stock. It can be modeled as a simple addition. Surplus also allows us to model recruitment, growth, and natural mortality that is often difficult data to collect. Stock assessments, that RAM is built on, allows us to easily back out surplus using historical catch and biomass records.</p>
-<p><span class="math display">\[\begin{equation}
+<span class="math display">\[\begin{equation}
 S_t=B_{t+1}-B_t+C_t
-\end{equation}\]</span></p>
+\end{equation}\]</span>
 <p>We will need to add a column in our dataset calculating surplus in any given year. Since we have a variable from the future we can use the <code>lead()</code> function. Make sure to drop the <code>NA</code> created by the lead function.</p>
 <div class="cell">
 <details>
@@ -3218,9 +3218,9 @@ S_t=B_{t+1}-B_t+C_t
 <h3 class="anchored" data-anchor-id="step-one-selecting-a-model">Step One: Selecting a Model</h3>
 <p>Non-linear least squares needs a model to fit the data. Understanding which model to use relies on your expertise and ability to justify its selection. Since we’re trying to predict fisheries surplus, we should examine the surplus-production literature.</p>
 <p>There are three primary surplus-production models in the fishery world. The most common is the Gordon-Schaefer model. Vert-pre et al., use a Fox-Model that typically provides a more conservative estimate of maximum sustainable yield. The last model is the Pella-Tomslison model that really is just a more flexible model of the other two using a shape parameter <span class="math inline">\(\phi\)</span> to control the curve. All are built on a logistic growth curve. Given a level of biomass we will be able to predict what the surplus ought to be if we know (or will determine) the maximum sustainable yield and the carrying capacity. Maximum sustainable yield simply refers to the amount of biomass that facilitates the greatest level of harvest possible without depleting the stock. Carrying capacity is the upper bound on the total population size and represents natural environmental pressure limiting stock growth. The paper uses a simplified Fox model that we try to find parameters for to fit the fishery data.</p>
-<p><span class="math display">\[\begin{equation}
+<span class="math display">\[\begin{equation}
 \hat{S_t}=-e*MSY(\frac{B_t}{K})\ln(\frac{B_t}{K})
-\end{equation}\]</span></p>
+\end{equation}\]</span>
 <p>Where e is base of the natural log <span class="math inline">\(\approx\)</span> 2.718, MSY is the maximum sustainable yield, K is the carrying capacity, and <span class="math inline">\(B_t\)</span> is the biomass for the observed year.</p>
 <p>Let’s create a function in R.</p>
 <div class="cell">

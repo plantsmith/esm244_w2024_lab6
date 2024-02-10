@@ -18,12 +18,12 @@ To demonstrate the power of non linear least squares in R we're going to recreat
 
 ### Data
 
-All data comes from the [RAM Legacy Database](https://www.re3data.org/repository/r3d100012095), normally we would have to go through the whole database, but instead I have extracted out the main table containing all the values of stock parameters and a list of stocks within the cod and sole families to examine. Anyone interested in fisheries should familiarize themselves with RAM because it is the best set of fisheries data across different stocks, countries, and time. 
+All data comes from the [RAM Legacy Database](https://www.re3data.org/repository/r3d100012095), normally we would have to go through the whole database, but instead I have extracted out the main table containing all the values of stock parameters and a list of stocks within the cod and sole families to examine. Anyone interested in fisheries should familiarize themselves with RAM because it is the best set of fisheries data across different stocks, countries, and time.
 
 Load in the data.
 
 ```{r}
-load(here::here("data","lab_6","fish_data.Rdata"))
+load(here::here("data","fish_data.Rdata"))
 
 library(tidyverse)
 library(Metrics)
@@ -31,18 +31,17 @@ library(cowplot)
 library(here)
 ```
 
-
 ## Single model NLS
 
 ### Step 1:
 
 Surplus is the excess amount of biomass that was added or taken from the underlying stock. It can be modeled as a simple addition. Surplus also allows us to model recruitment, growth, and natural mortality that is often difficult data to collect. Stock assessments, that RAM is built on, allows us to easily back out surplus using historical catch and biomass records.
 
-\begin{equation}
+$$
 S_t=B_{t+1}-B_t+C_t
-\end{equation}
+$$
 
-We will need to add a column in our dataset calculating surplus in any given year. Since we have a variable from the future we can use the `lead()` function. Make sure to drop the `NA` created by the lead function. 
+We will need to add a column in our dataset calculating surplus in any given year. Since we have a variable from the future we can use the `lead()` function. Make sure to drop the `NA` created by the lead function.
 
 Break down the following code chunk by adding comments at each line describing what is happening at each step and why need to do it.
 
@@ -58,7 +57,6 @@ surplus<-Fish_data |>
   
 ```
 
-
 Let's see what our data looks like with an example of one stock.
 
 ```{r}
@@ -71,12 +69,11 @@ ggplot(data=one_stock,aes(x=year,y=surplus))+
 
 ```
 
-
 ### Step One: Selecting a Model
 
-Non-linear least squares needs a model to fit the data. Understanding which model to use relies on your expertise and ability to justify its selection. Since we're trying to predict fisheries surplus, we should examine the surplus-production literature. 
+Non-linear least squares needs a model to fit the data. Understanding which model to use relies on your expertise and ability to justify its selection. Since we're trying to predict fisheries surplus, we should examine the surplus-production literature.
 
-There are three primary surplus-production models in the fishery world. The most common is the Gordon-Schaefer model. Vert-pre et al., use a Fox-Model that typically provides a more conservative estimate of maximum sustainable yield. The last model is the Pella-Tomslison model that really is just a more flexible model of the other two using a shape parameter $\phi$ to control the curve. All are built on a logistic growth curve. Given a level of biomass we will be able to predict what the surplus ought to be if we know (or will determine) the maximum sustainable yield and the carrying capacity. Maximum sustainable yield simply refers to the amount of biomass that facilitates the greatest level of harvest possible without depleting the stock. Carrying capacity is the upper bound on the total population size and represents natural environmental pressure limiting stock growth. The paper uses a simplified Fox model that we try to find parameters for to fit the fishery data.  
+There are three primary surplus-production models in the fishery world. The most common is the Gordon-Schaefer model. Vert-pre et al., use a Fox-Model that typically provides a more conservative estimate of maximum sustainable yield. The last model is the Pella-Tomslison model that really is just a more flexible model of the other two using a shape parameter $\phi$ to control the curve. All are built on a logistic growth curve. Given a level of biomass we will be able to predict what the surplus ought to be if we know (or will determine) the maximum sustainable yield and the carrying capacity. Maximum sustainable yield simply refers to the amount of biomass that facilitates the greatest level of harvest possible without depleting the stock. Carrying capacity is the upper bound on the total population size and represents natural environmental pressure limiting stock growth. The paper uses a simplified Fox model that we try to find parameters for to fit the fishery data.
 
 $$
 \hat{S_t}=-e*MSY(\frac{B_t}{K})\ln(\frac{B_t}{K})
@@ -94,7 +91,6 @@ return(out)
 
 
 ```
-
 
 It is always a good idea to test your function to make sure it works and to visualize how our model will fit the data.
 
@@ -125,7 +121,6 @@ theme_minimal()
 m=60000
 ```
 
-
 ### Step Three: Initial Guess
 
 Now we can construct our nonlinear least squares with sufficient guesses. But what should our guesses be? Well carrying capacity is straightforward. Traditionally, its estimated as the highest observed biomass so we can just take the max of the biomass data. Maximum sustainable yield can be found analytically. It's been done many times so I'll just tell you it's estimated at 37% of the carrying capacity.
@@ -153,7 +148,6 @@ one_stock_nls=nls(formula=????,
                   trace=????)
 ```
 
-
 ### Step Five: Evaluate
 
 Use the model to make predictions and plot the new predictions
@@ -171,22 +165,17 @@ ggplot(data=one_stock_predict)+
   geom_path(aes(x=year,y=predict),color='red'))
 ```
 
-
 Calculate the RMSE of the prediction
 
 ```{r}
 ## Either make your own rmse function or use the Metrics::rmse function
 ```
 
-
-
-Great our model works on a single model! Now we need to find a way to replicate the analysis. Ideally without using for loops as those can be a pain to account for. 
+Great our model works on a single model! Now we need to find a way to replicate the analysis. Ideally without using for loops as those can be a pain to account for.
 
 ## Using purrr to run many nls models
 
 Write some pseudocode to define an approach to create apply purrr to all
-
-
 
 ### Set up framework
 
@@ -211,7 +200,6 @@ all_nls_fcn<-function(surplus_df){ # Where will the surplus_df come from?
 }
 ```
 
-
 This code chunk runs a purrr mapping of build an nls, evaluating the nls, and getting our rmse scores in one step. However, it's broken. Run through each pipe to find the broken error. Fix the error and run the whole code chunk. There is one "error" that won't pop up, but our final output will be difficult to handle. Correct this mistake as well.
 
 ```{r}
@@ -225,10 +213,9 @@ fox_all<-surplus |>
   mutate(RMSE=map2_dbl(predictions,data,~Metrics::rmse(.x,.y$surplus)))
 ```
 
-
 ## Compare to a random null model
 
-In the paper, they derive a null model to test the different models against. The best way to test if any of these models are better is if they can out perform a random collection of data. They propose if our models can't outpeform the average surplus in the time frame, then the stock is under more influence of sheer randomness then any explicable measures. We can jump straight into the purrr analysis. 
+In the paper, they derive a null model to test the different models against. The best way to test if any of these models are better is if they can out perform a random collection of data. They propose if our models can't outpeform the average surplus in the time frame, then the stock is under more influence of sheer randomness then any explicable measures. We can jump straight into the purrr analysis.
 
 ```{r}
 
@@ -303,4 +290,3 @@ plot_list_legend[[6]]<-legend
 
 cowplot::plot_grid(plotlist=plot_list_legend,labels =c( plots$stockid,""),hjust=-0.5,vjust=1)
 ```
-

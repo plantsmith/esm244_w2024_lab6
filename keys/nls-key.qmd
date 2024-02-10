@@ -18,12 +18,12 @@ To demonstrate the power of non linear least squares in R we're going to recreat
 
 ### Data
 
-All data comes from the [RAM Legacy Database](https://www.re3data.org/repository/r3d100012095), normally we would have to go through the whole database, but instead I have extracted out the main table containing all the values of stock parameters and a list of stocks within the cod and sole families to examine. Anyone interested in fisheries should familiarize themselves with RAM because it is the best set of fisheries data across different stocks, countries, and time. 
+All data comes from the [RAM Legacy Database](https://www.re3data.org/repository/r3d100012095), normally we would have to go through the whole database, but instead I have extracted out the main table containing all the values of stock parameters and a list of stocks within the cod and sole families to examine. Anyone interested in fisheries should familiarize themselves with RAM because it is the best set of fisheries data across different stocks, countries, and time.
 
 Load in the data.
 
 ```{r}
-load(here::here("data","lab_6","fish_data.Rdata"))
+load(here::here("data","fish_data.Rdata"))
 
 library(tidyverse)
 library(Metrics)
@@ -31,17 +31,17 @@ library(cowplot)
 library(here)
 ```
 
-
 ## Single model NLS
 
 ### Step 1:
 
 Surplus is the excess amount of biomass that was added or taken from the underlying stock. It can be modeled as a simple addition. Surplus also allows us to model recruitment, growth, and natural mortality that is often difficult data to collect. Stock assessments, that RAM is built on, allows us to easily back out surplus using historical catch and biomass records.
 
+```{=tex}
 \begin{equation}
 S_t=B_{t+1}-B_t+C_t
 \end{equation}
-
+```
 We will need to add a column in our dataset calculating surplus in any given year. Since we have a variable from the future we can use the `lead()` function. Make sure to drop the `NA` created by the lead function.
 
 ```{r}
@@ -55,7 +55,6 @@ surplus<-Fish_data %>%
   
   
 ```
-
 
 Let's see what our data looks like with an example of one stock.
 
@@ -71,14 +70,15 @@ ggplot(data=one_stock,aes(x=year,y=surplus))+
 
 ### Step One: Selecting a Model
 
-Non-linear least squares needs a model to fit the data. Understanding which model to use relies on your expertise and ability to justify its selection. Since we're trying to predict fisheries surplus, we should examine the surplus-production literature. 
+Non-linear least squares needs a model to fit the data. Understanding which model to use relies on your expertise and ability to justify its selection. Since we're trying to predict fisheries surplus, we should examine the surplus-production literature.
 
-There are three primary surplus-production models in the fishery world. The most common is the Gordon-Schaefer model. Vert-pre et al., use a Fox-Model that typically provides a more conservative estimate of maximum sustainable yield. The last model is the Pella-Tomslison model that really is just a more flexible model of the other two using a shape parameter $\phi$ to control the curve. All are built on a logistic growth curve. Given a level of biomass we will be able to predict what the surplus ought to be if we know (or will determine) the maximum sustainable yield and the carrying capacity. Maximum sustainable yield simply refers to the amount of biomass that facilitates the greatest level of harvest possible without depleting the stock. Carrying capacity is the upper bound on the total population size and represents natural environmental pressure limiting stock growth. The paper uses a simplified Fox model that we try to find parameters for to fit the fishery data.  
+There are three primary surplus-production models in the fishery world. The most common is the Gordon-Schaefer model. Vert-pre et al., use a Fox-Model that typically provides a more conservative estimate of maximum sustainable yield. The last model is the Pella-Tomslison model that really is just a more flexible model of the other two using a shape parameter $\phi$ to control the curve. All are built on a logistic growth curve. Given a level of biomass we will be able to predict what the surplus ought to be if we know (or will determine) the maximum sustainable yield and the carrying capacity. Maximum sustainable yield simply refers to the amount of biomass that facilitates the greatest level of harvest possible without depleting the stock. Carrying capacity is the upper bound on the total population size and represents natural environmental pressure limiting stock growth. The paper uses a simplified Fox model that we try to find parameters for to fit the fishery data.
 
+```{=tex}
 \begin{equation}
 \hat{S_t}=-e*MSY(\frac{B_t}{K})\ln(\frac{B_t}{K})
 \end{equation}
-
+```
 Where e is base of the natural log $\approx$ 2.718, MSY is the maximum sustainable yield, K is the carrying capacity, and $B_t$ is the biomass for the observed year.
 
 Let's create a function in R.
@@ -89,7 +89,6 @@ fox<-function(m,carry,biomass){
 return(out)
 }
 ```
-
 
 ```{r}
   
@@ -108,7 +107,6 @@ ggplot(data=fox_sim,aes(x=year,y=surplus,color="Data"))+
   theme_minimal()
 
 ```
-
 
 ### Step Three: Initial Guess
 
@@ -136,7 +134,6 @@ one_stock_nls=nls(surplus~fox(m,carry,TBbest),
                   trace=TRUE)
 ```
 
-
 ### Step Five: Evaluate
 
 Show how the model fits the data.
@@ -152,11 +149,9 @@ ggplot(data=one_stock_predict)+
   geom_path(aes(x=year,y=predict),color='red')
 ```
 
-
-Great our model works on a single model! Now we need to find a way to replicate the analysis. Ideally without using for loops as those can be a pain to account for. 
+Great our model works on a single model! Now we need to find a way to replicate the analysis. Ideally without using for loops as those can be a pain to account for.
 
 ## Using purrr to run many nls models
-
 
 ```{r nlsmany}
 #Define a new function to pass along the nls calls
@@ -213,7 +208,7 @@ In the paper, about 12% of the stocks were more explained by random shocks and 1
 
 ## Graph the top 5 best fit models
 
-Purrr combined with cowplot creates a streamlined way to build multiple graphs. Let's take the 5 best fit Fox models and show how they performed compared to the data. 
+Purrr combined with cowplot creates a streamlined way to build multiple graphs. Let's take the 5 best fit Fox models and show how they performed compared to the data.
 
 ```{r}
 plots<-fox_all |> 
@@ -256,4 +251,3 @@ plot_list_legend[[6]]<-legend
 
 cowplot::plot_grid(plotlist=plot_list_legend,labels =c( plots$stockid,""),hjust=-0.5,vjust=1)
 ```
-
