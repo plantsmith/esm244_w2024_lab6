@@ -97,7 +97,7 @@ It is always a good idea to test your function to make sure it works and to visu
 Arrange the following out of order code to make a plot that adds an example Fox model onto our first graph.
 
 ```{r}
-#| eval: false
+
 
 
 labs(x="",y="Surplus Production")+
@@ -141,7 +141,6 @@ guess_vec=c(max(one_stock$TBbest)*0.37,
 Fill in the nls function to make our first model work!
 
 ```{r nlsonemodel}
-#| eval: false
 one_stock_nls=nls(formula=????,
                   data=?????,
                   start=??????,
@@ -153,7 +152,6 @@ one_stock_nls=nls(formula=????,
 Use the model to make predictions and plot the new predictions
 
 ```{r}
-#| eval: false
 
 #What commands can we use here
 one_stock_predict<-one_stock |> 
@@ -190,7 +188,7 @@ fox_all<-surplus |>
 Create a wrapper function to apply an nls model to our data. How do we provide guessess?
 
 ```{r nlsmany}
-#| eval: false  
+
 #Define a new function to pass along the nls calls
 
 all_nls_fcn<-function(surplus_df){ # Where will the surplus_df come from?
@@ -244,6 +242,7 @@ Look at the outputs and find a way to compare the RMSE for each model output. Ho
 ```
 
 In the paper, about 12% of the stocks were more explained by random shocks and 16% more so by abundance models. The rest were led by regime shifts that we did not model. Our results only found one stock out of 44 was better explained by random growth. Either our choice of nls models is far better than their mle method (not likely), or the subset I chose lends itself more to abundance models (this is really what happened). I did not want to overwhelm the analysis with over 200 stocks. Cod species in their paper typically were best explained by abundance models. Since our dataset focuses on cod, it's unsurprising that the Fox model best predicts cod surplus.
+
 
 ## Graph the top 5 best fit models
 
