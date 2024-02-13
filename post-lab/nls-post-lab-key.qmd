@@ -1,5 +1,5 @@
 ---
-title: "Post Lab Exercises Week 6 NLS"
+title: "Post Lab Exercises Week 6 NLS Key"
 format: 
   html:
     embed-resources: true
@@ -25,6 +25,8 @@ Create your own quarto document to answer these questions. Attach all necessary 
   + `map_dbl()`
   + `map_df()`
   + `map_lgl()`
+  
+Map returns a list, map_chr returns characters, map_dbl returns numeric double values (with decimals), map_df returns a dataframe, and map_lgl returns TRUE/FALSE logical values.
 
 2. If I have a dataset where I want to iterate over 4 different variables that are changing, which of the following functions would I use?
 
@@ -33,20 +35,45 @@ Create your own quarto document to answer these questions. Attach all necessary 
   c. `pmap()`
   d. `mutate()`
   
+pmap would be the best because we can define a list of 4 changing variables. For example, we want to sum up four variables that are changing we would use pmap on the list. Notice the names are consistent so that x goes where the x input is and so forth for each one.
+
+```{r}
+library(tidyverse)
+sum_fcn <- function(x, y, z,b) {
+  # do something with a, b, and c
+  return(x + y + z+b)
+}
+pmap(.l=list(x=seq(1,5),y=seq(2,6),z=seq(3,7),b=seq(4,8)),sum_fcn)
+```
+
+  
 3. Format the out of order code into the correct order for it to run
 
-```{r, eval=FALSE}
-janitor::clean_names() |> 
-mutate(reg=map(.x=data, ~lm(life_exp~pop+gdp_percap+year,data=.x))) |> 
-output <- gapminder |> 
-mutate(coeff=map(.x=reg, ~coefficients(.x)))
+```{r}
 library(gapminder)
-nest(.by=continent) |> 
+output <- gapminder |> 
+  janitor::clean_names() |> 
+  nest(.by=continent) |> 
+  mutate(reg=map(.x=data, ~lm(life_exp~pop+gdp_percap+year,data=.x))) |> 
+  mutate(coeff=map(.x=reg, ~coefficients(.x)))
 ```  
   
 4. Generate 10 random samples from a normal distribution where the mean and standard deviation increase from 1 to 10 and  to 20. Hint: Make sure the sequences are of the same length by setting the length.out=11 argument in seq()
 
+```{r}
+mean_in<-seq(1,10,length.out=11)
+sd_in<-seq(2,20,length.out=11)
+
+map2(mean_in,sd_in,~rnorm(n=10,mean=.x,sd=.y))
+```
+
+
 5. Use purrr to quickly return the class of every column from the `gapminder` dataset as characters
+
+```{r}
+gapminder |> map_chr(class)
+```
+
 
 ## NLS Practice
 
@@ -57,17 +84,24 @@ For task 2, you will use non linear least squares to estimate parameters of a le
 1) Create a dataframe called `lizard_clean` of only the sex, species, snout to vent length, and weight. Exclude juveniles from the analysis. Remove any species that possess less than 6 observations. We need to balance the data between males and females i.e. make sure that all species have both males and females. Run this code to do that:
 
 ```{r}
-#| eval: false
+lizard <- read_csv(here::here("data","lizard.csv"))
 
-lizard_m<-lizard_clean %>% 
+lizard_clean<-lizard |> 
+  select(spp,sex,SV_length,weight) |> 
+  filter(sex!="J") |> 
+  drop_na() |> 
+  group_by(spp,sex) |> 
+  filter(n()>=6)
+
+lizard_m<-lizard_clean |> 
   filter(sex=="M")
 
-lizard_f<-lizard_clean %>% 
+lizard_f<-lizard_clean |> 
   filter(sex=="F")
 
 spp_select<-intersect(unique(lizard_m$spp),unique((lizard_f$spp)))
 
-lizard_comb<-lizard_clean %>%   
+lizard_comb<-lizard_clean |>   
   filter(spp %in% spp_select)
 ```
 
@@ -95,13 +129,99 @@ W=a(SVL)^b
   \end{aligned}
   \end{equation}
   
+  
+```{r}
+#Create length function model
+length_to_weight<-function(a,b,length){
+  out=a*length^b
+  
+  return(out)
+}
+# Add controls
+controls=nls.control(maxiter=100)
+
+guess_model=lm(log(weight)~log(SV_length),data=lizard_comb)
+
+#Run nls
+nls_one<-nls(weight~length_to_weight(a,b,SV_length),
+             data=lizard_comb,
+             start=list(a=exp(coefficients(guess_model))[1],b=coefficients(guess_model)[2]),
+             control=controls)
+
+#Set up the predictions for graphing
+length_step<- seq(from=min(lizard_comb$SV_length),to=max(lizard_comb$SV_length),length.out=100)
+
+
+predictions<-length_to_weight(a=coefficients(nls_one)[1],b=coefficients(nls_one)[2],length_step)
+
+
+#collect the predictions into one df
+dfplot=data.frame(predict=predictions,length=length_step)
+
+# Make a graph
+ggplot(dfplot,aes(x=length,y=predict))+
+  geom_line(color="black")+
+  geom_point(data=lizard_comb,aes(x=SV_length,y=weight,color=sex))
+```
+  
+  
 3) Present your fitted model on a plot with female and male lizards separated by color. You should include the nls model in `kable` output of the html. 
+
+```{r}
+broom::tidy(nls_one) |> 
+  knitr::kable() |> 
+  kableExtra::kable_classic_2()
+```
+
 
 **The following parts are super-mega optional! It's using purrr to run on all species. If you're craving more continue on. Otherwise you will be asked to do something similar in your homework!**
 
 4) Group by species and sex then nest the data. Use `map()` variants to parameterize length to weight models for every species separated by each sex. Hint: you may need to adjust the controls of the `nls` function
 
-5) Use the models to predict the data. Calculate the RMSE for each model created in part 3. Make at able showing the RMSE for each model. Does using a tailored species and sex model out perform using nls on the whole dataset? Write a brief description of when you should use NLS on a whole dataset or subsets.
+```{r}
+nls_fcn<-function(lizard_df){
+  
+  guess_model=lm(log(weight)~log(SV_length),data=lizard_df)
+  
+  nls_one<-nls(weight~length_to_weight(a,b,SV_length),
+               data=lizard_df,
+               start=list(a=exp(coefficients(guess_model)[1]),b=coefficients(guess_model)[2]),control = controls)
+  
+  return(nls_one)
+}
+
+nls_lizards_purr<-lizard_comb |> 
+  group_by(spp,sex) |> 
+  nest() |> 
+  arrange(spp) |> 
+  mutate(nls_model=map(data,~nls_fcn(.x))) |> 
+  mutate(predictions=map2(nls_model,data,~predict(.x,newdata=.y))) |>  #Part 5 here
+  mutate(RMSE=map2_dbl(predictions,data,~Metrics::rmse(.x,.y$weight)))
+```
+
+
+5) Use the models to predict the data. Calculate the RMSE for each model created in part 3. Make at table showing the RMSE for each model. Does using a tailored species and sex model out perform using nls on the whole dataset? Write a brief description of when you should use NLS on a whole dataset or subsets.
+
+```{r}
+nls_lizards_purr |> 
+  select(spp,sex,RMSE) |> 
+  knitr::kable() |> 
+  kableExtra::kable_classic_2()
+```
+
 
 6) Create a plot grid showing each species and sexes actual weight and the model prediction.
+
+```{r}
+  plts<-nls_lizards_purr |> 
+  mutate(graph=map2(data,predictions,~ggplot()+
+                geom_point(data = .x,aes(x=.x$SV_length,y=.x$weight))+
+                geom_line(aes(x=.x$SV_length,y=.y),color='red')+
+                  labs(x="SVL",y="Weight (g)")))
+
+library(cowplot)
+  
+  plot_grid(plotlist = plts$graph)
+```
+
 
