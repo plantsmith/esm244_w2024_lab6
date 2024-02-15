@@ -3162,7 +3162,7 @@ return!"\t\n\x0B\f\r                　\u2028\u2029
 
 <section id="set-up" class="level2">
 <h2 class="anchored" data-anchor-id="set-up">Set up</h2>
-<p>Create your own quarto document to answer these questions. Attach all necessary packages and load the lizard data from the github data folder. Complete at least the first lizard nls model in lab and show either Casey or Nathan before you leave.</p>
+<p>Create your own quarto document to answer these questions. Attach all necessary packages and load the lizard data from the lab’s data folder <code>here(&quot;data&quot;,&quot;lizards.csv&quot;)</code> Complete at least the first lizard nls model in lab and show either Casey or Nathan before you leave.</p>
 </section>
 <section id="purrr-practice" class="level2">
 <h2 class="anchored" data-anchor-id="purrr-practice">Purrr Practice</h2>
@@ -3200,14 +3200,15 @@ return!"\t\n\x0B\f\r                　\u2028\u2029
 </details>
 </div>
 <ol start="4" type="1">
-<li><p>Generate 10 random samples from a normal distribution where the mean and standard deviation increase from 1 to 10 and to 20. Hint: Make sure the sequences are of the same length by setting the length.out=11 argument in seq()</p></li>
+<li><p>Generate 10 random samples from a normal distribution where the mean and standard deviation increase from 1 to 10 and 2 to 20. Hint: Make sure the sequences are of the same length by setting the length.out=11 argument in seq()</p></li>
 <li><p>Use purrr to quickly return the class of every column from the <code>gapminder</code> dataset as characters</p></li>
 </ol>
 </section>
 <section id="nls-practice" class="level2">
 <h2 class="anchored" data-anchor-id="nls-practice">NLS Practice</h2>
 <p>Source: Lightfoot, D. and W.G. Whitford. 2020. Lizard pitfall trap data from 11 NPP study locations at the Jornada Basin LTER site, 1989-2006 ver 37. Environmental Data Initiative. https://doi.org/10.6073/pasta/4a6e258fb49c31e222ecbbcfd128967f</p>
-<p>For task 2, you will use non linear least squares to estimate parameters of a length to weight model for lizard populations in New Mexico.</p>
+<p>Now you will use non linear least squares to estimate parameters of a length to weight model for lizard populations in New Mexico. Scientists measure from the tip of the nose to the very beginning of their tail in a metric called Snout-to-Vent Length (SVL). Lizards can eject their tails in defense against predators. Some adult lizards do not have tails so total length is not a very useful measurement. We find estimates of their weight and fecundity for a population model by using NLS to parameterize a weight to length model.</p>
+<p><a href="https://www.researchgate.net/profile/Andre-Koch-2/publication/341568459/figure/fig1/AS:893936419733504@1590142459151/The-Total-length-TL-is-given-by-the-Snout-vent-length-SVL-and-the-tail-length-Also.png">Example of a lizard’s snout to vent length measurement.</a></p>
 <ol type="1">
 <li>Create a dataframe called <code>lizard_clean</code> of only the sex, species, snout to vent length, and weight. Exclude juveniles from the analysis. Remove any species that possess less than 6 observations. We need to balance the data between males and females i.e. make sure that all species have both males and females. Run this code to do that:</li>
 </ol>

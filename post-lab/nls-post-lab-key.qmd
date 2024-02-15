@@ -13,7 +13,7 @@ execute:
 
 ## Set up
 
-Create your own quarto document to answer these questions. Attach all necessary packages and load the lizard data from the github data folder. Complete at least the first lizard nls model in lab and show either Casey or Nathan before you leave.
+Create your own quarto document to answer these questions. Attach all necessary packages and load the lizard data from the lab's data folder `here("data","lizards.csv")` Complete at least the first lizard nls model in lab and show either Casey or Nathan before you leave.
 
 
 ## Purrr Practice
@@ -58,7 +58,7 @@ output <- gapminder |>
   mutate(coeff=map(.x=reg, ~coefficients(.x)))
 ```  
   
-4. Generate 10 random samples from a normal distribution where the mean and standard deviation increase from 1 to 10 and  to 20. Hint: Make sure the sequences are of the same length by setting the length.out=11 argument in seq()
+4. Generate 10 random samples from a normal distribution where the mean and standard deviation increase from 1 to 10 and 2 to 20. Hint: Make sure the sequences are of the same length by setting the length.out=11 argument in seq()
 
 ```{r}
 mean_in<-seq(1,10,length.out=11)
@@ -79,7 +79,9 @@ gapminder |> map_chr(class)
 
 Source: Lightfoot, D. and W.G. Whitford. 2020. Lizard pitfall trap data from 11 NPP study locations at the Jornada Basin LTER site, 1989-2006 ver 37. Environmental Data Initiative. https://doi.org/10.6073/pasta/4a6e258fb49c31e222ecbbcfd128967f
 
-For task 2, you will use non linear least squares to estimate parameters of a length to weight model for lizard populations in New Mexico. 
+Now you will use non linear least squares to estimate parameters of a length to weight model for lizard populations in New Mexico. Scientists measure from the tip of the nose to the very beginning of their tail in a metric called Snout-to-Vent Length (SVL). Lizards can eject their tails in defense against predators. Some adult lizards do not have tails so total length is not a very useful measurement. We find estimates of their weight and fecundity for a population model by using NLS to parameterize a weight to length model.
+
+[Example of a lizard's snout to vent length measurement.](https://www.researchgate.net/profile/Andre-Koch-2/publication/341568459/figure/fig1/AS:893936419733504@1590142459151/The-Total-length-TL-is-given-by-the-Snout-vent-length-SVL-and-the-tail-length-Also.png)
 
 1) Create a dataframe called `lizard_clean` of only the sex, species, snout to vent length, and weight. Exclude juveniles from the analysis. Remove any species that possess less than 6 observations. We need to balance the data between males and females i.e. make sure that all species have both males and females. Run this code to do that:
 
