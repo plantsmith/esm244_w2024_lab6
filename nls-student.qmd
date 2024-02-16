@@ -35,25 +35,27 @@ library(here)
 
 ### Step 0: Planning our attack
 
-1.   Understand Model
+1.  Understand Model
 
-2.   Apply NLS to single fish stock
+2.  Apply NLS to single fish stock
 
-    a.   Model Selection
+```         
+a.   Model Selection
 
-    b.   Create R Function
+b.   Create R Function
 
-    c.  Define initial Guess
+c.  Define initial Guess
 
-    d.  Run NLS
+d.  Run NLS
 
-    e.  Evaluate Results
+e.  Evaluate Results
+```
 
 3.  Use purrr to map nls to all stocks
 
-4.   Build a null model and use purrr for all stocks
+4.  Build a null model and use purrr for all stocks
 
-5.   Compare Fox Model to Null Model
+5.  Compare Fox Model to Null Model
 
 6.  Plot results
 
@@ -65,18 +67,16 @@ $$
 S_t=B_{t+1}-B_t+C_t
 $$
 
-
 Break down the following code chunk by adding comments at each line describing what is happening at each step and why need to do it.
 
 ```{r}
-surplus<-Fish_data |> 
-  group_by(stockid) |> 
-  select(stockid,year,TBbest,TCbest) |> 
-  drop_na() |> 
-  mutate(f_biomass=lead(TBbest)) |> 
-  mutate(surplus=f_biomass-TBbest+TCbest) |> 
-  drop_na()
-  
+surplus<-Fish_data |> # create new data frame called surplus
+  group_by(stockid) |> #group by the stock id 
+  select(stockid,year,TBbest,TCbest) |>  #select only the stock id, year, tb best, tc best
+  drop_na() |> # drop the NA bc NAs are problematic
+  mutate(f_biomass=lead(TBbest)) |> #new column of f biomas from tbBest and move it up one index
+  mutate(surplus=f_biomass-TBbest+TCbest) |> #create new surplus column using above eq
+  drop_na() #drop the new NAs created
   
 ```
 
@@ -84,7 +84,7 @@ Examine data for one stock. Run the following code chunk.
 
 ```{r}
 one_stock<-surplus |> 
-  filter(stockid=="COD1f-XIV")
+  filter(stockid=="COD1f-XIV") #looking at one particular species surplus
 
 ggplot(data=one_stock,aes(x=year,y=surplus))+
   geom_point(size=3,color="black")+
@@ -92,14 +92,18 @@ ggplot(data=one_stock,aes(x=year,y=surplus))+
 
 ```
 
-
 How to best model Surplus? Use a Fox Model (that's what the paper used)
 
 $$
 \hat{S_t}=-e*MSY(\frac{B_t}{K})\ln(\frac{B_t}{K})
 $$
 
+
 Where e is base of the natural log $\approx$ 2.718, MSY is the maximum sustainable yield, K is the carrying capacity, and $B_t$ is the biomass for the observed year.
+
+e = just a number 2.718
+MSY - amount of fish we can harvest sustainably
+k = carrying capacity (how much can ecosystem support)
 
 ### Step 2: Create function in R
 
@@ -113,31 +117,46 @@ return(out)
 
 ```
 
-
-
 Arrange the following out of order code to make a plot that adds an example Fox model onto our first graph.
 
 ```{r}
-labs(x="",y="Surplus Production")+
-  
-geom_line(aes(x=year,y=sim,color="Model"),linewidth=2)+
-  
-carry=150000
-
-scale_color_manual(values=c("Data"="black","Model"="red"))+
-  
-mutate(sim=fox(m,carry,TBbest))
-
-ggplot(data=fox_sim,aes(x=year,y=surplus,color="Data"))+
-  
-geom_point(size=3)+
-
-fox_sim<-one_stock |>   
-
-theme_minimal()
+# labs(x="",y="Surplus Production")+
+#   
+# geom_line(aes(x=year,y=sim,color="Model"),linewidth=2)+
+#   
+# carry=150000
+# 
+# scale_color_manual(values=c("Data"="black","Model"="red"))+
+#   
+# mutate(sim=fox(m,carry,TBbest))
+# 
+# ggplot(data=fox_sim,aes(x=year,y=surplus,color="Data"))+
+#   
+# geom_point(size=3)+
+# 
+# fox_sim<-one_stock |>   
+# 
+# theme_minimal()
 
 m=60000
 ```
+
+```{r}
+
+carry=150000
+m=60000
+
+fox_sim <-one_stock |> mutate(sim=fox(m,carry,TBbest)) 
+
+ggplot(data=fox_sim,aes(x=year,y=surplus,color="Data")) + # data -> i will specify the color later....
+  geom_point(size=3)+
+  geom_line(aes(x=year,y=sim,color="Model"),linewidth=2) + # model -> i will specify the color later
+  scale_color_manual(values=c("Data"="black","Model"="red")) + #legend is coming form scale color. manual
+  labs(x="",y="Surplus Production")+
+  theme_minimal()
+
+```
+
 
 ### Step Three: Initial Guess
 
@@ -145,10 +164,12 @@ Write a vector for the initial parameter guess in the following code chunk.
 
 How many parameters are we estimating? Look at the fox function for guidance.
 
-Hints: Carrying Capacity is the most fish an environment can sustain.
-Maximum Sustainable Yield is 37% of carrying capacity in a Fox model (comes from analytical solution)
+Hints: Carrying Capacity is the most fish an environment can sustain. Maximum Sustainable Yield is 37% of carrying capacity in a Fox model (comes from analytical solution)
 
 ```{r guess}
+
+k_guess <- max(one_stock$TBbest)
+m_guess <- k_guess*.37
 
 ```
 
@@ -157,10 +178,10 @@ Maximum Sustainable Yield is 37% of carrying capacity in a Fox model (comes from
 Fill in the nls function to make our first model work!
 
 ```{r nlsonemodel}
-one_stock_nls=nls(formula=????,
-                  data=?????,
-                  start=??????,
-                  trace=????)
+one_stock_nls = nls(formula = surplus~fox(m,carry,TBbest),
+                  data = one_stock,
+                  start = list(m = m_guess,carry = k_guess),
+                  trace = TRUE)
 ```
 
 ### Step Five: Evaluate
@@ -171,19 +192,25 @@ Use the model to make predictions and plot the new predictions
 
 #What commands can we use here
 one_stock_predict<-one_stock |> 
-  ?????
+  mutate(predict = predict(one_stock_nls, newdata= TBbest))
 
 # Code to plot
 ggplot(data=one_stock_predict)+
   geom_point(aes(x=year,y=surplus))+
-  geom_path(aes(x=year,y=predict),color='red'))
+  geom_path(aes(x=year,y=predict),color='red')
 ```
+This model is doing a better job of hitting the mean?
 
 Calculate the RMSE of the prediction
 
 ```{r}
 ## Either make your own rmse function or use the Metrics::rmse function
+
+Metrics::rmse(one_stock_predict$surplus,one_stock_predict$predict)
+
+
 ```
+What is the predict column predicting? Surplus. Surplus column is actual value. Comparing what we thought we were going to get to what we got. 
 
 Great our model works on a single model! Now we need to find a way to replicate the analysis.
 
@@ -191,20 +218,22 @@ Great our model works on a single model! Now we need to find a way to replicate 
 
 Write some pseudocode to define an approach to apply purrr to all fish stocks.
 
+some point run nls
+- define guesses
+- we have our model already, that doesnt change
+- find a way to give purrr nls
+- find a way to give purrr data 
 
+purrr::map(.x,.f=nls_fcn(.x))
 
-
-
-
-
-### Set up wrappers
+### Set up wrappers (functions that we can put into Purrrrrr)
 
 Run the following code chunk. Examine `fox_all` dataframe to help you build the nls function wrapper for purrr. What does nest() do and why is that useful to us?
 
 ```{r}
 fox_all<-surplus |>
   group_by(stockid) |> 
-  nest()
+  nest() #data in data -> store data in column 
 ```
 
 Create a wrapper function to apply an nls model to our data. How do we provide guesses?
@@ -214,10 +243,15 @@ Create a wrapper function to apply an nls model to our data. How do we provide g
 #Define a new function to pass along the nls calls
 
 all_nls_fcn<-function(surplus_df){ # Where will the surplus_df come from?
-  nls(surplus~fox(m,carry,TBbest),
-  data=surplus_df,
-  start=????? # How are we going to define the guesses for each new species?
+  
+  carry_guess = max(surplus_df$TBbest)
+  m_guess = max(surplus_df$TBbest)*0.37
+  
+ nls(surplus~fox(m,carry,TBbest),
+    data=surplus_df,
+    start=list(m=m_guess, carry = carry_guess))# How are we going to define the guesses for each new species?
 }
+
 ```
 
 This code chunk runs a purrr mapping of build an nls, evaluating the nls, and getting our rmse scores in one step. However, it's broken. Run through each pipe to find the broken error. Fix the error and run the whole code chunk.
@@ -228,9 +262,11 @@ This code chunk runs a purrr mapping of build an nls, evaluating the nls, and ge
 fox_all<-surplus |>
   group_by(stockid) |> 
   nest() |> 
-  mutate(nls_model=map(data,~nls(.x))) |> 
+  mutate(nls_model=map(data,~all_nls_fcn(.x))) |> 
   mutate(predictions=map2(nls_model,data,~predict(.x,newdata=.y))) |> 
-  mutate(RMSE=map2_dbl(predictions,data,~Metrics::rmse(.x,.y$surplus)))
+  mutate(RMSE=map2_dbl(predictions,data,~Metrics::rmse(.x,.y$surplus))) 
+
+#.x=data, .y = model 
 ```
 
 ## Compare to a random null model
@@ -248,7 +284,6 @@ r_avg<-function(surplus){
   return(rmse)
 }
 
-
 r_mse<-surplus |>
   group_by(stockid) |> 
   nest() |> 
@@ -261,6 +296,15 @@ Look at the outputs and find a way to compare the RMSE for each model output. Ho
 
 ```{r}
 ## Perform analysis in this code chunk.
+
+r_mse$RMSE-fox_all$RMSE<0
+
+sum(r_mse$RMSE-fox_all$RMSE<0) #one species better predicted by the avg model 
+
+which(r_mse$RMSE-fox_all$RMSE<0) #it was number 39 (tells us which species)
+
+fox_all$stockid[39] #[1] "WHITNS-VIId" tells us name of species 
+
 ```
 
 In the paper, about 12% of the stocks were more explained by random shocks and 16% more so by abundance models. The rest were led by regime shifts that we did not model. Our results only found one stock out of 44 was better explained by random growth. Either our choice of nls models is far better than their mle method (not likely), or the subset I chose lends itself more to abundance models (this is really what happened). I did not want to overwhelm the analysis with over 200 stocks. Cod species in their paper typically were best explained by abundance models. Since our dataset focuses on cod, it's unsurprising that the Fox model best predicts cod surplus.
