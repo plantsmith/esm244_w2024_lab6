@@ -181,6 +181,10 @@ broom::tidy(nls_one) |>
 4) Group by species and sex then nest the data. Use `map()` variants to parameterize length to weight models for every species separated by each sex. Hint: you may need to adjust the controls of the `nls` function
 
 ```{r}
+
+#using generic lizard data frame so any lizard can be picked....
+#nls function - passed in each time lizard data frame - not all but any
+#make function to apply to ANY OF THEM.
 nls_fcn<-function(lizard_df){
   
   guess_model=lm(log(weight)~log(SV_length),data=lizard_df)
@@ -192,15 +196,19 @@ nls_fcn<-function(lizard_df){
   return(nls_one)
 }
 
+# USE PURR TO APPLY TO ALL OF THEM
 nls_lizards_purr<-lizard_comb |> 
   group_by(spp,sex) |> 
   nest() |> 
   arrange(spp) |> 
   mutate(nls_model=map(data,~nls_fcn(.x))) |> 
-  mutate(predictions=map2(nls_model,data,~predict(.x,newdata=.y))) |>  #Part 5 here
+  mutate(predictions=map2(.x= nls_model,.y=data,~predict(.x,newdata=.y))) |>  
+  
+  #Part 5 here
   mutate(RMSE=map2_dbl(predictions,data,~Metrics::rmse(.x,.y$weight)))
 ```
 
+#lower number is better, RMSE more data driven AIC, BIC - how well did I predict compared to other models. 
 
 5) Use the models to predict the data. Calculate the RMSE for each model created in part 3. Make at table showing the RMSE for each model. Does using a tailored species and sex model out perform using nls on the whole dataset? Write a brief description of when you should use NLS on a whole dataset or subsets.
 

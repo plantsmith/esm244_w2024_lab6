@@ -35,25 +35,27 @@ library(here)
 
 ### Step 0: Planning our attack
 
-1.   Understand Model
+1.  Understand Model
 
-2.   Apply NLS to single fish stock
+2.  Apply NLS to single fish stock
 
-    a.   Model Selection
+```         
+a.   Model Selection
 
-    b.   Create R Function
+b.   Create R Function
 
-    c.  Define initial Guess
+c.  Define initial Guess
 
-    d.  Run NLS
+d.  Run NLS
 
-    e.  Evaluate Results
+e.  Evaluate Results
+```
 
 3.  Use purrr to map nls to all stocks
 
-4.   Build a null model and use purrr for all stocks
+4.  Build a null model and use purrr for all stocks
 
-5.   Compare Fox Model to Null Model
+5.  Compare Fox Model to Null Model
 
 6.  Plot results
 
@@ -66,7 +68,6 @@ Surplus is the excess amount of biomass that was added or taken from the underly
 S_t=B_{t+1}-B_t+C_t
 \end{equation}
 ```
-
 We will need to add a column in our dataset calculating surplus in any given year. Since we have a variable from the future we can use the `lead()` function. Make sure to drop the `NA` created by the lead function.
 
 ```{r}
@@ -92,7 +93,6 @@ ggplot(data=one_stock,aes(x=year,y=surplus))+
   theme_minimal()
 
 ```
-
 
 Non-linear least squares needs a model to fit the data. Understanding which model to use relies on your expertise and ability to justify its selection. Since we're trying to predict fisheries surplus, we should examine the surplus-production literature.
 

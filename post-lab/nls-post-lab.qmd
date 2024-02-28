@@ -15,11 +15,13 @@ execute:
 ## Set up
 
 Create your own quarto document to answer these questions. Attach all necessary packages and load the lizard data from the lab's data folder `here("data","lizards.csv")` Complete at least the first lizard nls model in lab and show either Casey or Nathan before you leave.
+
 ```{r}
 library(tidyverse)
 library(Metrics)
 library(cowplot)
 library(here)
+library(gapminder)
 ```
 
 ```{r}
@@ -28,22 +30,28 @@ lizards <- read.csv(here('data','lizard.csv'))
 
 ## Purrr Practice
 
-1. What data type do the following functions return?
+1.  What data type do the following functions return?
 
-  + `map()` = applying a function to each element, and returning the results as a list 
-  + `map_chr()`= take data, put into function, return as character
-  + `map_dbl()`= " " return as a double (numeric vector)
-  + `map_df()` = " " return as a data frame
-  + `map_lgl()` = " " return as a logical vector
+-   `map()` = applying a function to each element, and returning the results as a list
+-   `map_chr()`= take data, put into function, return as character
+-   `map_dbl()`= " " return as a double (numeric vector)
+-   `map_df()` = " " return as a data frame
+-   `map_lgl()` = " " return as a logical vector
 
-2. If I have a dataset where I want to iterate over 4 different variables that are changing, which of the following functions would I use?
+2.  If I have a dataset where I want to iterate over 4 different variables that are changing, which of the following functions would I use?
 
-  a. `map()`
-  b. `map2()`
-  c. `pmap()` ----> this one
-  d. `mutate()`
-  
-3. Format the out of order code into the correct order for it to run
+```{=html}
+<!-- -->
+```
+a.  `map()`
+b.  `map2()`
+c.  `pmap()` ----\> this one
+d.  `mutate()`
+
+```{=html}
+<!-- -->
+```
+3.  Format the out of order code into the correct order for it to run
 
 ```{r, eval=FALSE}
 library(gapminder)
@@ -53,9 +61,9 @@ output <- gapminder |>
   nest(.by=continent) |> 
   mutate(reg=map(.x=data, ~lm(life_exp~pop+gdp_percap+year,data=.x))) %>%
   mutate(coeff=map(.x=reg, ~coefficients(.x)))
-```  
-  
-4. Generate 10 random samples from a normal distribution where the mean and standard deviation increase from 1 to 10 and 2 to 20. Hint: Make sure the sequences are of the same length by setting the length.out=11 argument in seq()
+```
+
+4.  Generate 10 random samples from a normal distribution where the mean and standard deviation increase from 1 to 10 and 2 to 20. Hint: Make sure the sequences are of the same length by setting the length.out=11 argument in seq()
 
 ```{r}
 mean_in<-seq(1,10,length.out=11)
@@ -64,7 +72,11 @@ sd_in<-seq(2,20,length.out=11)
 map2(mean_in,sd_in,~rnorm(n=10,mean=.x,sd=.y)) #map 2 applying a pair
 ```
 
-5. Use purrr to quickly return the class of every column from the `gapminder` dataset as characters
+5.  Use purrr to quickly return the class of every column from the `gapminder` dataset as characters
+
+```{r}
+gapminder |> map_chr(class)
+```
 
 ## NLS Practice
 
@@ -74,11 +86,20 @@ Now you will use non linear least squares to estimate parameters of a length to 
 
 [Example of a lizard's snout to vent length measurement.](https://www.researchgate.net/profile/Andre-Koch-2/publication/341568459/figure/fig1/AS:893936419733504@1590142459151/The-Total-length-TL-is-given-by-the-Snout-vent-length-SVL-and-the-tail-length-Also.png)
 
-1) Create a dataframe called `lizard_clean` of only the sex, species, snout to vent length, and weight. Exclude juveniles from the analysis. Remove any species that possess less than 6 observations. We need to balance the data between males and females i.e. make sure that all species have both males and females. Run this code to do that:
+1)  Create a dataframe called `lizard_clean` of only the sex, species, snout to vent length, and weight. Exclude juveniles from the analysis. Remove any species that possess less than 6 observations. We need to balance the data between males and females i.e. make sure that all species have both males and females. Run this code to do that:
 
 ```{r}
 #| eval: false
 
+lizards <- read.csv(here('data','lizard.csv'))
+
+lizard_clean <- lizards %>% 
+  select(spp,sex,SV_length,weight) %>% 
+  filter(sex!="J") %>% 
+  drop_na() %>% 
+  group_by(spp,sex) |> 
+  filter(n()>=6)
+  
 lizard_m<-lizard_clean %>% 
   filter(sex=="M")
 
@@ -86,6 +107,7 @@ lizard_f<-lizard_clean %>%
   filter(sex=="F")
 
 spp_select<-intersect(unique(lizard_m$spp),unique((lizard_f$spp)))
+# this code is finding species that have both male and females
 
 lizard_comb<-lizard_clean %>%   
   filter(spp %in% spp_select)
@@ -93,35 +115,77 @@ lizard_comb<-lizard_clean %>%
 
 Use the data frame `lizard_comb` for the following analyses
 
-2) Fit a snout length to weight model of the following form to all lizard in your clean dataframe.
+2)  Fit a snout length to weight model of the following form to all lizard in your clean dataframe.
 
+```{=tex}
 \begin{equation}
 W=a(SVL)^b
 \end{equation}
+```
+a)  Weight is given by W, snout to vent length by SVL, and a and b are the parameters that need to be fitted. Which strategy would be best to provide an initial guess? We could go with strategy one and look through the literature, but let’s practice our coding and math skills.
 
-  a) Weight is given by W, snout to vent length by SVL, and a and b are the parameters that need to be fitted. Which strategy would be best to provide an initial guess? We could go with strategy one and look through the literature, but let’s practice our coding and math skills.
-  
-  b) Since we know the model is exponential in nature, we could log transform the data. If we do a standard OLS regression on the log transformed data, we can get approximations of the parameters from the regression coefficients
-`my_guess_model <- lm(log_weight ~ log_length, data = my_df) `
+b)  Since we know the model is exponential in nature, we could log transform the data. If we do a standard OLS regression on the log transformed data, we can get approximations of the parameters from the regression coefficients `my_guess_model <- lm(log_weight ~ log_length, data = my_df)`
 
-  c) Using the coefficients function, we can then supply the nls start list with the regression coefficients. You will have to mathematically transform the intercept coefficient to get the guess for parameter a. With a= exp(coefficients(guess_model))[1]. The following math breaks down why that works.
-  \begin{equation}
-  \begin{aligned}
-  W&=a(SVL)^b \\
-  \ln{W}&=\ln{a}+b\ln{(SVL)} &\text{Take logs} \\
-  \hat{\ln{W}}&=\hat{a}+\hat{b}\ln{(SVL)} &\text{Run regression to get coefficients}\\
-  \hat{a}&=\ln{a}  &\text{Estimated a from Regression}\\  
-  a&=e^{\hat{a}} &\text{Convert back to original a in model}
-  \end{aligned}
-  \end{equation}
-  
-3) Present your fitted model on a plot with female and male lizards separated by color. You should include the nls model in `kable` output of the html. 
+c)  Using the coefficients function, we can then supply the nls start list with the regression coefficients. You will have to mathematically transform the intercept coefficient to get the guess for parameter a. With a= exp(coefficients(guess_model))\[1\]. The following math breaks down why that works. \begin{equation}
+      \begin{aligned}
+      W&=a(SVL)^b \\
+      \ln{W}&=\ln{a}+b\ln{(SVL)} &\text{Take logs} \\
+      \hat{\ln{W}}&=\hat{a}+\hat{b}\ln{(SVL)} &\text{Run regression to get coefficients}\\
+      \hat{a}&=\ln{a}  &\text{Estimated a from Regression}\\  
+      a&=e^{\hat{a}} &\text{Convert back to original a in model}
+      \end{aligned}
+      \end{equation}
+      
+```{r}
+#Create length function model
+length_to_weight<-function(a,b,length){
+  out=a*length^b
+  return(out)
+}
+# Add controls
+controls=nls.control(maxiter=100) # what does this do?
+
+guess_model=lm(log(weight)~log(SV_length),data=lizard_comb)
+
+#Run nls
+nls_one<-nls(weight~length_to_weight(a,b,SV_length),
+             data=lizard_comb,
+             start=list(a=exp(coefficients(guess_model))[1],b=coefficients(guess_model)[2]),
+             control=controls)
+
+#Set up the predictions for graphing
+length_step<- seq(from=min(lizard_comb$SV_length),to=max(lizard_comb$SV_length),length.out=100)
+
+
+predictions<-length_to_weight(a=coefficients(nls_one)[1],b=coefficients(nls_one)[2],length_step)
+
+
+#collect the predictions into one df
+dfplot=data.frame(predict=predictions,length=length_step)
+
+# Make a graph
+ggplot(dfplot,aes(x=length,y=predict))+
+  geom_line(color="black")+
+  geom_point(data=lizard_comb,aes(x=SV_length,y=weight,color=sex))
+```
+      
+
+```{=html}
+<!-- -->
+```
+3)  Present your fitted model on a plot with female and male lizards separated by color. You should include the nls model in `kable` output of the html.
+
+```{r}
+broom::tidy(nls_one) |> 
+  knitr::kable() |> 
+  kableExtra::kable_classic_2()
+```
+
 
 **The following parts are super-mega optional! It's using purrr to run on all species. If you're craving more continue on. Otherwise you will be asked to do something similar in your homework!**
 
-4) Group by species and sex then nest the data. Use `map()` variants to parameterize length to weight models for every species separated by each sex. Hint: you may need to adjust the controls of the `nls` function
+4)  Group by species and sex then nest the data. Use `map()` variants to parameterize length to weight models for every species separated by each sex. Hint: you may need to adjust the controls of the `nls` function
 
-5) Use the models to predict the data. Calculate the RMSE for each model created in part 3. Make at able showing the RMSE for each model. Does using a tailored species and sex model out perform using nls on the whole dataset? Write a brief description of when you should use NLS on a whole dataset or subsets.
+5)  Use the models to predict the data. Calculate the RMSE for each model created in part 3. Make at able showing the RMSE for each model. Does using a tailored species and sex model out perform using nls on the whole dataset? Write a brief description of when you should use NLS on a whole dataset or subsets.
 
-6) Create a plot grid showing each species and sexes actual weight and the model prediction.
-
+6)  Create a plot grid showing each species and sexes actual weight and the model prediction.
